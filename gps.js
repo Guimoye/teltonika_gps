@@ -6,15 +6,6 @@ var mysql = require('mysql');
 var crc = require('crc');
 var fs = require('fs');
 var util = require('util');
-/*
-var db_config = {
-    host: 'localhost',
-    user: 'root',
-    password: '',
-    database: 'GPS_DATA',
-    insecureAuth: true
-};
-*/
 
 var db_config = {
     host: '178.62.194.186',
@@ -36,15 +27,15 @@ var connection = mysql.createConnection(db_config);
 
 var connectDB = connection.connect( function(error) {
     if(error) {
-        console.log('Error connecting to db. Błąd podczas łączenia do bazy danych:', error);
+        console.log('Error connecting to db:', error);
         setTimeout(connectDB, 5000);
     } else {
-        console.log('Connection established. Połączono do bazy danych.');
+        console.log('Connection established');
     }
 });
 
 connection.on('error', function(error) {
-    console.log('Database error. Błąd bazy danych:', error);
+    console.log('Database error:', error);
     if(error.code === 'PROTOCOL_CONNECTION_LOST') {
         connectDB();
     } else {
@@ -56,16 +47,16 @@ var isValidIMEI = function (IMEI, socket){
     var imei_answer = new Buffer(1);
     connection.query('SELECT count(*) as w from IMEI_ALLOW where imei=? and allow=1', [ IMEI ], function(error, rows, fields) {
         if (error) {
-            console.log('Błąd w funkcji isValidIMEI '+error);
+            console.log('Error in function isValidIMEI '+error);
             throw error;
         }
         if (rows[0].w == 1) {
-            console.log('Allow IMEI. Dozwolony IMEI: '+IMEI);
+            console.log('Allow IMEI: '+IMEI);
             socket.imei = IMEI;
             imei_answer[0] = 1;
             socket.write(imei_answer);
         } else {
-            console.log('Disallow IMEI. Odrzucony IMEI: '+IMEI);
+            console.log('Disallow IMEI: '+IMEI);
             imei_answer[0] = 0;
             socket.end(imei_answer);
          }
@@ -75,7 +66,7 @@ var isValidIMEI = function (IMEI, socket){
 var saveGPS = function ( timestamp, latitude, longitude, altitude, angle, sattelites, speed ) {
     connection.query('REPLACE into GPS_DATA (timestamp, latitude, longitude, altitude, angle, sattelites, speed ) values (FROM_UNIXTIME(?),?,?,?,?,?,?)', [ timestamp, latitude, longitude, altitude, angle, sattelites, speed ], function(error, rows, fields) {
         if (error) {
-            console.log('Błąd w funkcji saveGPS '+error);
+            console.log('Error in function saveGPS '+error);
             throw error;
         }
     });
@@ -84,19 +75,19 @@ var saveGPS = function ( timestamp, latitude, longitude, altitude, angle, sattel
 var saveIO = function ( bytes, timestamp, id, value ) {
     connection.query('REPLACE into IO_DATA_'+bytes+' (timestamp, id, value ) values (FROM_UNIXTIME(?),?,?)', [ timestamp, id, value ], function(error, rows, fields) {
         if (error) {
-            console.log('Błąd w funkcji saveIO '+error);
+            console.log('Error in function saveIO '+error);
             throw error;
         }
     });
 };
 
+
 var s = function (socket) {
-    console.log('New connection. Nowe połączenie '+socket.remoteAddress);
+    console.log('New connection '+socket.remoteAddress);
     socket.imei = undefined;
 
     var socketOnData = function (data) {
-        console.log('llegando_datos: '+data);
-      
+        console.log('llegando_function_DATA: '+data);
         var processIO = function (n_bytes) {
 
             var io_id;
@@ -112,44 +103,44 @@ var s = function (socket) {
         };
 
         if (socket.imei === undefined) {
-            // IMEI jeszcze nie przypisany
+            // IMEI not yet assigned
             if (data[0] === 0 && data[1] == 15){
-                // Identyfikator prawidłowy
+                // ID valid
                 if (data.length == 17) {
-                    // Ilość danych prawidłowa
+                    // The amount of data is correct
                     isValidIMEI(data.toString().substr(2,15), socket);
                 } else {
-                    // Ilość danych nieprawidłowa zakończ połączenie
+                    // The amount of data is incorrect terminate the connection
                     socket.end();
                 }
             } else {
-                // Identyfikator nieprawidłowy zakończ połączenie
+                // ID invalid terminate connection
                 socket.end();
             }
 
         } else {
-            // IMEI już przypisany
-            //console.log("Dane z IMEI: " + socket.imei + "\n\r");
+            // IMEI already assigned
+            //console.log("Get data from IMEI: " + socket.imei + "\n\r");
             socket.avl_data_array_length = 0;
             if (socket.avl_data_array_length === 0) {
                 if (data.length > 8) {
-                    //console.time("Dane AVL");
+                    //console.time("AVL data");
                     if (data[0] === 0 && data[1] === 0 && data[2] === 0 && data[3] === 0) {
-                        // Następne 4 bajty to długość tablicy AVL DATA
+                        // The next 4 bytes are the length of the AVL DATA table
                         var buf = new Buffer(4);
                         buf = data.slice(4, 8);
                         socket.avl_data_array_length = buf.readUInt32BE(0);
                         if (data.length == socket.avl_data_array_length + 12){
-                            // Ilość danych prawidłowa
+                            // The amount of data is correct
                             var avl_packet_crc = new Buffer(4);
                             avl_packet_crc = data.slice(-4);
                             var calc_crc = crc.crc16(data.slice(8,-4));
                             var acknowledges = new Buffer(4);
                             if (avl_packet_crc.readUInt32BE(0) == calc_crc) {
-                                // CRC poprawne
+                                // CRC correct
                                 data = data.slice(8,-4);
                                 if (data[0] == 8){
-                                    // Protokół w wersji 08
+                                    // Protocol version 08
                                     var number_of_data = data[1];
                                     data = data.slice(2);
 
@@ -162,6 +153,7 @@ var s = function (socket) {
                                         var sattelites = parseInt(data.slice(21,22).toString('hex'), 16);
                                         var speed = parseInt(data.slice(22,24).toString('hex'), 16);
 
+                                        console.log('timestamp: '+timestamp);
                                         console.log('longitude: '+longitude);
                                         console.log('latitude: '+latitude);
                                         console.log('altitude: '+altitude);
@@ -171,19 +163,11 @@ var s = function (socket) {
                                         saveGPS(timestamp, latitude, longitude, altitude, angle, sattelites, speed);
 
                                         data = data.slice(24);
-                                        console.log('data: '+data);
-                                       
 
                                         var event_io_id = data.slice(0,1).toString('hex');
                                         var n_of_total_io = data.slice(1,2).toString('hex');
 
-                                     
-                                        console.log('event_io_id: '+event_io_id);
-                                        console.log('n_of_total_io: '+n_of_total_io);
-
                                         data = data.slice(2);
-                                        console.log('data_slice: '+data);
-
                                         processIO(1);
                                         processIO(2);
                                         processIO(4);
@@ -201,13 +185,13 @@ var s = function (socket) {
 
 
                                 } else {
-                                    // Nieznana wersja protokołu
+                                    // Protocol version unknown
                                     socket.end();
                                 }
 
 
                             } else {
-                                // CRC niepoprawne
+                                // CRC not valid
                                 acknowledges[0] = 0;
                                 acknowledges[1] = 0;
                                 acknowledges[2] = 0;
@@ -215,11 +199,11 @@ var s = function (socket) {
                                 socket.end(acknowledges);
                             }
                         } else {
-                            //console.log ("Nieprawidłowa ilość danych. Odebrano: " + data.length + ", wymagane: " + socket.avl_data_array_length);
+                            //console.log ("Invalid amount of data. Received: " + data.length + ", wymagane: " + socket.avl_data_array_length);
                             socket.end();
                         }
                     }
-                    //console.timeEnd("Dane AVL");
+                    //console.timeEnd("AVL data");
                 } else {
                     socket.end();
                 }
@@ -228,17 +212,14 @@ var s = function (socket) {
             }
 
         }
-
-       
     };
-    
 
     var socketOnClose = function(error) {
-        console.log("Connection closed. Zamknięto połączenie IMEI" + ":" + socket.imei + " - " + error);
+        console.log("Connection closed IMEI" + ":" + socket.imei + " - " + error);
     };
 
     var socketOnError = function(error) {
-        console.log("Error cocket IMEI. Błąd socket IMEI" + ":" + socket.imei + " - " + error);
+        console.log("Error cocket IMEI" + ":" + socket.imei + " - " + error);
     };
 
     socket.on('data', socketOnData);
