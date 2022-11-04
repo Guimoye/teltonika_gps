@@ -95,7 +95,7 @@ var s = function (socket) {
     socket.imei = undefined;
 
     var socketOnData = function (data) {
-        console.log('llegando: '+data);
+        console.log('llegando_test: '+data);
       
         var processIO = function (n_bytes) {
 
@@ -161,6 +161,13 @@ var s = function (socket) {
                                         var angle = parseInt(data.slice(19,21).toString('hex'), 16);
                                         var sattelites = parseInt(data.slice(21,22).toString('hex'), 16);
                                         var speed = parseInt(data.slice(22,24).toString('hex'), 16);
+
+                                        console.log(' longitude: '+longitude);
+                                        console.log(' latitude: '+latitude);
+                                        console.log(' altitude: '+altitude);
+                                        console.log(' angle: '+angle);
+                                        console.log(' sattelites: '+sattelites);
+                                        console.log(' speed: '+speed);
                                         saveGPS(timestamp, latitude, longitude, altitude, angle, sattelites, speed);
 
                                         data = data.slice(24);
