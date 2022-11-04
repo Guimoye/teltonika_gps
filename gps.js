@@ -95,7 +95,7 @@ var s = function (socket) {
     socket.imei = undefined;
 
     var socketOnData = function (data) {
-        console.log('llegando_test: '+data);
+        console.log('llegando_prueba: '+data);
       
         var processIO = function (n_bytes) {
 
@@ -154,13 +154,13 @@ var s = function (socket) {
                                     data = data.slice(2);
 
                                     for (var data_no = 0; data_no < number_of_data; data_no ++) {
-                                        var timestamp = parseInt(data.slice(0,8).toString('hex'), 16) / 1000;
-                                        var longitude = parseInt(data.slice(9,13).toString('hex'), 16);
-                                        var latitude = parseInt(data.slice(13,17).toString('hex'), 16);
-                                        var altitude = parseInt(data.slice(17,19).toString('hex'), 16);
-                                        var angle = parseInt(data.slice(19,21).toString('hex'), 16);
-                                        var sattelites = parseInt(data.slice(21,22).toString('hex'), 16);
-                                        var speed = parseInt(data.slice(22,24).toString('hex'), 16);
+                                        var timestamp   = parse(data.slice(0,8).toString('hex'), 16) / 1000;
+                                        var longitude   = parse(data.slice(9,13).toString('hex'), 16);
+                                        var latitude    = parse(data.slice(13,17).toString('hex'), 16);
+                                        var altitude    = parse(data.slice(17,19).toString('hex'), 16);
+                                        var angle       = parse(data.slice(19,21).toString('hex'), 16);
+                                        var sattelites  = parse(data.slice(21,22).toString('hex'), 16);
+                                        var speed       = parse(data.slice(22,24).toString('hex'), 16);
 
                                         console.log(' longitude: '+longitude);
                                         console.log(' latitude: '+latitude);
