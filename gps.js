@@ -95,7 +95,7 @@ var s = function (socket) {
     socket.imei = undefined;
 
     var socketOnData = function (data) {
-        console.log('llegando: '+data);
+        console.log('llegando_datos: '+data);
       
         var processIO = function (n_bytes) {
 
