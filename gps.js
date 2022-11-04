@@ -155,9 +155,9 @@ var s = function (socket) {
 
                                     for (var data_no = 0; data_no < number_of_data; data_no ++) {
                                         var timestamp = parseInt(data.slice(0,8).toString('hex'), 16) / 1000;
-                                        var longitude = parseFloat(data.slice(9,13).toString('hex'), 16);
-                                        var latitude = parseFloat(data.slice(13,17).toString('hex'), 16);
-                                        var altitude = parseFloat(data.slice(17,19).toString('hex'), 16);
+                                        var longitude = parseInt(data.slice(9,13).toString('hex'), 16);
+                                        var latitude = parseInt(data.slice(13,17).toString('hex'), 16);
+                                        var altitude = parseInt(data.slice(17,19).toString('hex'), 16);
                                         var angle = parseInt(data.slice(19,21).toString('hex'), 16);
                                         var sattelites = parseInt(data.slice(21,22).toString('hex'), 16);
                                         var speed = parseInt(data.slice(22,24).toString('hex'), 16);
@@ -171,11 +171,19 @@ var s = function (socket) {
                                         saveGPS(timestamp, latitude, longitude, altitude, angle, sattelites, speed);
 
                                         data = data.slice(24);
+                                        console.log('data: '+data);
+                                       
 
                                         var event_io_id = data.slice(0,1).toString('hex');
                                         var n_of_total_io = data.slice(1,2).toString('hex');
 
+                                     
+                                        console.log('event_io_id: '+event_io_id);
+                                        console.log('n_of_total_io: '+n_of_total_io);
+
                                         data = data.slice(2);
+                                        console.log('data_slice: '+data);
+
                                         processIO(1);
                                         processIO(2);
                                         processIO(4);
